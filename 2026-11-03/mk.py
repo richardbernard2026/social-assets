@@ -1,0 +1,41 @@
+from PIL import Image, ImageDraw, ImageFont
+import glob
+def f(n,s): return ImageFont.truetype(glob.glob(f'/usr/share/fonts/**/{n}',recursive=True)[0],s)
+M=lambda s:f('DejaVuSansMono.ttf',s); S=lambda s:f('DejaVuSans.ttf',s); SB=lambda s:f('DejaVuSans-Bold.ttf',s)
+BG=(13,17,23); CARD=(22,27,34); G=(62,207,142); R=(248,81,73); W=(230,237,243); D=(139,148,158); O=(255,159,67)
+def base(t):
+    im=Image.new('RGB',(1080,1080),BG); d=ImageDraw.Draw(im)
+    d.rounded_rectangle((50,50,1030,1030),18,fill=CARD,outline=(48,54,61),width=2)
+    for i,c in enumerate([(255,95,86),(255,189,46),(39,201,63)]): d.ellipse((80+i*30,80,98+i*30,98),fill=c)
+    d.text((190,76),t,font=M(20),fill=D); return im,d
+# 1 logged-out test
+im,d=base('logged_out_test.js')
+d.text((90,150),"// 1. no login, only the anon key",font=M(26),fill=O)
+for i,l in enumerate(["const sb = createClient(URL, ANON_KEY)","const { data } = await sb","  .from('profiles').select('*')"]): d.text((90,195+i*42),l,font=M(27),fill=G)
+d.text((90,345),"// other users' rows came back?",font=M(26),fill=R)
+d.text((90,430),"-- 2. fix it in SQL",font=M(26),fill=O)
+for i,l in enumerate(["alter table profiles","  enable row level security;","create policy own_rows on profiles","  for select to authenticated","  using ((select auth.uid()) = user_id);"]): d.text((90,475+i*42),l,font=M(27),fill=G)
+d.text((90,740),"-- re-run step 1: should return []",font=M(26),fill=D)
+d.text((90,860),"Test it the way a stranger",font=SB(42),fill=W)
+d.text((90,915),"would: logged out.",font=SB(42),fill=W)
+im.save('post1_logged_out_test.png')
+# 2 decision card
+im=Image.new('RGB',(1080,1080),BG); d=ImageDraw.Draw(im)
+d.text((540,260),"The agent writes the code.",font=SB(52),fill=D,anchor='mm')
+d.text((540,400),"Who sees a customer's",font=SB(66),fill=W,anchor='mm')
+d.text((540,485),"quote request?",font=SB(66),fill=W,anchor='mm')
+d.text((540,600),"That one's still my call.",font=SB(56),fill=G,anchor='mm')
+d.text((540,820),"Building Aruon · Brownsville, TX",font=S(32),fill=D,anchor='mm')
+im.save('post2_my_call.png')
+# 3 user_metadata
+im,d=base('metadata_audit.sql')
+d.text((90,150),"-- users can edit their own user_metadata",font=M(24),fill=O)
+d.text((90,190),"-- supabase.auth.updateUser({ data: { role: 'admin' } })",font=M(19),fill=R)
+d.text((90,270),"FIND POLICIES THAT TRUST IT",font=SB(30),fill=G)
+for i,l in enumerate(["select tablename, policyname","from pg_policies","where qual ilike '%user_metadata%'","   or with_check ilike '%user_metadata%';"]): d.text((90,315+i*42),l,font=M(28),fill=G)
+d.text((90,540),"FIX: roles live in app_metadata",font=SB(30),fill=G)
+d.text((90,585),"-- set server-side only",font=M(24),fill=O)
+for i,l in enumerate(["(auth.jwt() -> 'app_metadata'","   ->> 'role') = 'admin'"]): d.text((90,625+i*42),l,font=M(28),fill=G)
+d.text((90,860),"If the user can write it,",font=SB(42),fill=W)
+d.text((90,915),"don't let it grant access.",font=SB(42),fill=W)
+im.save('post3_user_metadata.png')
